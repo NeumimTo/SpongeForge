@@ -24,7 +24,9 @@
  */
 package org.spongepowered.mod.mixin.core.common;
 
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Streams;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -33,6 +35,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityList;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.EnumCreatureType;
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.crafting.CraftingManager;
@@ -86,10 +89,14 @@ import org.spongepowered.mod.interfaces.IMixinBlock;
 import org.spongepowered.mod.interfaces.IMixinEventBus;
 import org.spongepowered.mod.plugin.SpongeModPluginContainer;
 import org.spongepowered.mod.util.StaticMixinForgeHelper;
+import org.spongepowered.mod.util.WrappedArrayList;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Predicate;
 
 import javax.annotation.Nullable;
@@ -549,5 +556,14 @@ public abstract class MixinSpongeImplHooks {
     @Overwrite
     public static Predicate<PluginContainer> getPluginFilterPredicate() {
         return plugin -> !SpongeCommandFactory.CONTAINER_LIST_STATICS.contains(plugin.getId()) && plugin instanceof SpongeModPluginContainer;
+    }
+
+    @Overwrite
+    public static void capturePerEntityItemDrop(PhaseContext<?> phaseContext, Entity owner,
+        EntityItem entityitem) {
+        ArrayListMultimap<UUID, EntityItem> map = phaseContext.getCapturedEntityItemDropSupplier().get();
+        ArrayList<EntityItem> entityItems = (ArrayList<EntityItem>) map.get(owner.getUniqueID());
+        owner.capturedDrops = new WrappedArrayList(owner, entityItems);
+        entityItems.add(entityitem);
     }
 }
